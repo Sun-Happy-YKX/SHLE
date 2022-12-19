@@ -1,0 +1,14 @@
+*__pycache__*
+.vscode*
+*.tmp
+data/labelme_data
+data/model
+data/original_data
+data/coco_data
+Stage1/faster_rcnn_output
+
+data/labelme_data/
+data/model/
+data/original_data/
+data/coco_data/
+Stage1/faster_rcnn_output/
