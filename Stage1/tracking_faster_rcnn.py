@@ -25,7 +25,6 @@ parser.add_argument('--num', type=int)
 parser.add_argument('--show', action='store_true')
 args = parser.parse_args()
 
-
 def tracking(cur_pred, next_pred, path1, path2, video_path):
 
     index1 = 0
