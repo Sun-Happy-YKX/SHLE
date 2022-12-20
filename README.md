@@ -45,12 +45,13 @@ After download the demo data and trained model, we should move them to correct d
 <!-- <iframe height=3600 width=900 src="https://github.com/Yang-Kaixing/SHLE/blob/ab9040c1193e421079e440365344dbfc5d6cfcf9/data/readme/demo.mp4"> -->
 <!-- <iframe src=https://github.com/Yang-Kaixing/SHLE/blob/ab9040c1193e421079e440365344dbfc5d6cfcf9/data/readme/demo.mp4 height=600 width=800>  -->
 <!-- <video id="video" controls="" preload="none" poster="封面">
-      <source id="mp4" src="https://github.com/Yang-Kaixing/SHLE/blob/ab9040c1193e421079e440365344dbfc5d6cfcf9/data/readme/demo.mp4" type="video/mp4">
+      <source id="mp4" src="https://player.bilibili.com/player.html?aid=606591700&bvid=BV1984y147JD&cid=930887295&page=1" type="video/mp4">
 </videos> -->
+<iframe height="400" width="600" src="//player.bilibili.com/player.html?aid=49775093&cid=87150521&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
 
 The output video of ``demo.sh`` is stored in ``$HOME_DIR/Stage2/output/video.mp4``
-<iframe src="https://player.bilibili.com/player.html?aid=606591700&bvid=BV1984y147JD&cid=930887295&page=1" scrolling="no" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
-`<br>`
+
+<br>
 The effect of SHLE is shown in this video.
 
 ## Experiment Results
