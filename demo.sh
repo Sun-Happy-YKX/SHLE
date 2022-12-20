@@ -1,4 +1,3 @@
-export HOME_DIR='/data/yangkaixing/Height_Estimation/SHLE'
 export HOME_DIR='Your SHLE Project Path'
 
 cd $HOME_DIR/data/labelme2coco
