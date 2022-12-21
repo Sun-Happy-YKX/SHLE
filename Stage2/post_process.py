@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 import seaborn as sns
 from sklearn.neighbors import KernelDensity
-
+from matplotlib.gridspec import GridSpec
 import math
 import argparse
 import warnings
@@ -238,7 +238,7 @@ def kalman(value, all_img_names, ground_truth, save_filter_path, Q=1e-5, R=1e-2)
         plt.savefig(os.path.join(save_filter_path, all_img_names[j-1] + '_filter.jpg'), dpi=150)
         plt.close()
 
-    return xhat
+    return xhat[1:]
 
 if __name__ == '__main__':
 
@@ -263,24 +263,20 @@ if __name__ == '__main__':
     record_file.write('M:{} bandwidth:{} sigma:{} N:{} extend_num:{} tracker:{} record_file:{} Gaussian:{} Depth Filter:{} Kalman:{} Kalman_Q:{} Kalman_R:{}\n'.format(args.M, args.bandwidth, args.sigma, args.N, args.extend_num, args.tracker, args.record_file, not args.no_Gaussian, not args.no_depth_filter, not args.no_kalman, args.kalman_Q, args.kalman_R))
 
     num = args.data_num
-    dat_path = "../data/original_data/val/images_0{}/disparity_images".format(num)
-    path_CAM = '../data/original_data/adas_params'
-    gt_bbox_path = '../data/original_data/val/images_0{}/left_colorimages'.format(num)
-    pred_bbox_path = '../Stage1/faster_rcnn_output/tracking_{}_json/images_0{}'.format(args.tracker, num)
-    image_path = '../Stage1/faster_rcnn_output/tracking_{}_image/images_0{}'.format(args.tracker, num)
-    save_xyz_path = '../Stage1/faster_rcnn_output/tracking_{}_xyz/images_0{}'.format(args.tracker, num)
-    save_filter_path = '../Stage1/faster_rcnn_output/tracking_{}_filter/images_0{}'.format(args.tracker, num)
+    dat_path = "../data/demo_data/val/images_{:0>3d}/disparity_images".format(int(num))
+    path_CAM = '../data/demo_data/adas_params'
+    gt_bbox_path = '../data/demo_data/val/images_{:0>3d}/left_colorimages'.format(int(num))
+    pred_bbox_path = '../Stage1/faster_rcnn_output/tracking_{}_json/images_{:0>3d}'.format(args.tracker, int(num))
+    image_path = '../Stage1/faster_rcnn_output/tracking_{}_image/images_{:0>3d}'.format(args.tracker, int(num))
+    save_xyz_path = '../Stage1/faster_rcnn_output/tracking_{}_xyz/images_{:0>3d}'.format(args.tracker, int(num))
+    save_filter_path = '../Stage1/faster_rcnn_output/tracking_{}_filter/images_{:0>3d}'.format(args.tracker, int(num))
     M = args.M   # point below M will be removed 实验二
     sigma = args.sigma   # kde center width 实验三
     N = args.N  # select the 50 lowest points, compute mean 实验四
     extend_num = args.extend_num  # bounding box extends 5 pixels up and down 实验一
-    ground_truth = [3.7, 2.85, 3.1]  # zhongke images_014/015/016
-    all_height = []
-    all_disparity = []
-    all_rgb = []
-    all_img_name = []
+    all_height, all_disparity, all_rgb, all_img_name= [], [], [], []
     filenames = os.listdir(pred_bbox_path)
-    filenames.sort(key=lambda x: int(x[8:-20]))
+    filenames.sort()
 
     for i in filenames:
         aa = i.split('.')[0].split('_')
@@ -289,13 +285,14 @@ if __name__ == '__main__':
         dat_name = 'disparity_5_' + aa[1] + '_' + aa[2] + '_' + aa[3] + '_' + aa[4] + '.dat'
         box, flag = compute_pred_success(os.path.join(pred_bbox_path, i), os.path.join(gt_bbox_path, i))
 
-        rgb_image = cv2.imread(os.path.join(image_path, i).replace('json', 'jpg'))
-        all_rgb.append(rgb_image)
-        disparity = preprocess(os.path.join(dat_path, dat_name))
-        colored_disparity = cv2.applyColorMap(np.uint8(disparity / np.amax(disparity) * 255), cv2.COLORMAP_JET)
-        all_disparity.append(colored_disparity)
-
         if flag == 1:
+
+            rgb_image = cv2.imread(os.path.join(image_path, i).replace('json', 'jpg'))
+            all_rgb.append(rgb_image)
+            disparity = preprocess(os.path.join(dat_path, dat_name))
+            colored_disparity = cv2.applyColorMap(np.uint8(disparity / np.amax(disparity) * 255), cv2.COLORMAP_JET)
+            all_disparity.append(colored_disparity)
+
             depth_map = disparity_to_depth(disparity)
             cx, cy, fx, fy = readCamera(path_CAM)  # unit: pixel
             depth_cam_matrix = np.array([[fx, 0, cx],
@@ -304,39 +301,106 @@ if __name__ == '__main__':
             xyz = depth2xyz(depth_map, depth_cam_matrix, box, extend_num, depth_scale=1, extend=True)
             last_point_cloud = delete_point(xyz, M)
             predict_height = Gaussian(last_point_cloud, sigma, N, args.no_Gaussian, args.no_depth_filter, args.bandwidth)
+
             all_height.append(predict_height)
             all_img_name.append(cc)
 
     img_num = pred_bbox_path.split('/')[-1]
-    all_heights = []
-    all_img_names = []
-    for x,y in zip(all_height, all_img_name):
+ 
+    all_heights, all_disparitys, all_rgbs, all_img_names= [], [], [], []
+    for x, y, z, w in zip(all_height, all_img_name, all_rgb, all_disparity):
         if np.isnan(x) == False:
             all_heights.append(x)
             all_img_names.append(y)
+            all_rgbs.append(z)
+            all_disparitys.append(w)
 
-    if img_num == 'images_014':
-        if not args.no_kalman:
-            all_heights = kalman(all_heights, all_img_names, ground_truth[0] * np.ones_like(all_heights), save_filter_path, Q=args.kalman_Q, R=args.kalman_R)
-        errors = np.mean(all_heights - ground_truth[0] * np.ones_like(all_heights))
-        accuracy = errors / ground_truth[0]
 
-    elif img_num == 'images_015':
-        if not args.no_kalman:
-            all_heights = kalman(all_heights, all_img_names, ground_truth[1] * np.ones_like(all_heights), save_filter_path, Q=args.kalman_Q, R=args.kalman_R)
-        errors = np.mean(all_heights - ground_truth[1] * np.ones_like(all_heights))
-        accuracy = errors / ground_truth[1]
+    # if img_num == 'images_014':
+    #     ground_truth = 3.7
+    # elif img_num == 'images_015':
+    #     ground_truth = 2.85
+    # elif img_num == 'images_001':
+    #     ground_truth = 3.2
+    # elif img_num == 'images_002':
+    #     ground_truth = 3.3
+    # elif img_num == 'images_003':
+    #     ground_truth = 6.0
+    # elif img_num == 'images_004':
+    #     ground_truth = 4.7
+    # elif img_num == 'images_005':
+    #     ground_truth = 5.3
+    # elif img_num == 'images_006':
+    #     ground_truth = 2.89
+    # elif img_num == 'images_007':
+    #     ground_truth = 3.86
+    # elif img_num == 'images_008':
+    #     ground_truth = 2.2
+    # elif img_num == 'images_011':
+    #     ground_truth = 3.7
+    # elif img_num == 'images_012':
+    #     ground_truth = 3.3
+    # elif img_num == 'images_013':
+    #     ground_truth = 3.3
+    if img_num == 'images_017':
+        ground_truth = 2.85
+    elif img_num == 'images_018':
+        ground_truth = 2.2
+    elif img_num == 'images_019':
+        ground_truth = 5.3
 
-    data_storage.append({'len':len(all_heights),'accuracy':accuracy,'error':errors})
-    print('average error : {:.2f}m'.format(errors))
+    # images_001 3.2m 桥洞
+    # images_002 3.3m 桥洞
+    # images_003 6.0m 监控杆
+    # images_004 4.7m 电线
+    # images_005 5.3m 立交桥
+    # images_006 2.89m 限高杆 
+    # images_007 3.86m 桥洞 
+    # images_008 2.2m 限高杆 
+
+    # images_011 3.7m 限高杆
+    # images_012 3.3m 限高杆
+    # images_013 3.3m 限高杆 同上
+    # images_014 3.7m 限高杆
+    # images_015 2.85m 限高杆
+    # images_016 3.1m 入口
+
+    if not args.no_kalman:
+        all_heights = kalman(all_heights, all_img_names, ground_truth * np.ones_like(all_heights), save_filter_path, Q=args.kalman_Q, R=args.kalman_R)
+    errors = all_heights - ground_truth * np.ones_like(all_heights)
+    error = np.mean(errors)
+    accuracy = error / ground_truth
+
+
+    data_storage.append({'len':len(all_heights),'accuracy':accuracy,'error':error})
+    print('average error : {:.2f}m'.format(error))
     print('{} : {:.2%}'.format(img_num, accuracy))
-    record_file.write('average error : {:.2f}m\n'.format(errors))
+    record_file.write('average error : {:.2f}m\n'.format(error))
     record_file.write('{} : {:.2%}\n'.format(img_num, accuracy))
 
-    os.makedirs('./output/frames', exist_ok=True)
+    os.makedirs('./output/images{:0>3d}'.format(int(num)), exist_ok=True)
+
     for i in range(0, len(all_heights)):
-        # all_heights: 预测高度  error: 与GT误差 all_disparity: 视差图 all_rgb: 左视图(带预测框)
-        disparity, rgb, height, error = all_disparity[i], all_rgb[i], all_heights[i], errors[i]
-        
-        result_image = ''
-        cv2.imwrite('./output/frames/frame_{:0>4d}'.format(i), result_image)
+        # all_heights: 预测高度  error: 与GT误差 all_disparitys: 视差图 all_rgbs: 左视图(带预测框)
+        disparity, rgb, height, error = all_disparitys[i], all_rgbs[i], all_heights[i], errors[i]
+
+        fig = plt.figure(figsize=(36, 9))
+        # bg = plt.imread("tmp.png")
+        # fig.figimage(bg)
+
+        plt.suptitle('SHLE Demo in Scene Image{:0>3d}'.format(int(num)),  fontsize = 80, y=0.99)
+        gs = GridSpec(1, 9)
+        ax1 = plt.subplot(gs[0, 0:4])
+        ax1.axis('off')
+        plt.text(550, 800, 'Disparity Map', fontsize=30)
+
+        ax2 = plt.subplot(gs[0, 4:8])
+        plt.text(550, 800, 'RGB Image', fontsize=30)
+        ax2.axis('off')
+        ax3 = plt.subplot(gs[0:, 8])
+        ax3.axis('off')
+        plt.text(0, 0.5, 'Height: {:.2f}m\nError   : {:.2f}m'.format(height, error), fontsize=50)
+
+        ax1.imshow(disparity)
+        ax2.imshow(rgb)
+        plt.savefig('./output/images{:0>3d}/frame_{:0>4d}.jpg'.format(int(num), i))

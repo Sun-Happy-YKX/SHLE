@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--num', type=str, default='all')
 args = parser.parse_args()
 
-register_coco_instances("val_dataset", {}, "../data/coco_data/test/test2017_images_0{}.json".format(args.num), \
+register_coco_instances("val_dataset", {}, "../data/coco_data/test/test2017_images_{:0>3d}.json".format(int(args.num)), \
                             "../data/coco_data/test")
 
 MetadataCatalog.get("val_dataset")

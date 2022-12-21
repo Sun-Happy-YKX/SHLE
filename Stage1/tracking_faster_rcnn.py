@@ -25,6 +25,7 @@ parser.add_argument('--num', type=int)
 parser.add_argument('--show', action='store_true')
 args = parser.parse_args()
 
+
 def tracking(cur_pred, next_pred, path1, path2, video_path):
 
     index1 = 0
@@ -90,11 +91,11 @@ def save_json(save_path, image_name, bbox):
         f.write(data)
 
 if __name__ == "__main__":
-    image_path = '../data/coco_data/test/test2017_images_0{}.json'.format(args.num)
-    pred_bbox_path = './faster_rcnn_output/coco_instances_images0{}_results.json'.format(args.num)
-    path1 = './faster_rcnn_output/tracking_{}_image/images_0{}'.format(args.tracker, args.num)
-    path2 = './faster_rcnn_output/tracking_{}_json/images_0{}'.format(args.tracker, args.num)
-    video_path = '../data/labelme_data/test2017_images_0{}'.format(args.num)
+    image_path = '../data/coco_data/test/test2017_images_{:0>3d}.json'.format(int(args.num))
+    pred_bbox_path = './faster_rcnn_output/coco_instances_images{:0>3d}_results.json'.format(int(args.num))
+    path1 = './faster_rcnn_output/tracking_{}_image/images_{:0>3d}'.format(args.tracker, int(args.num))
+    path2 = './faster_rcnn_output/tracking_{}_json/images_{:0>3d}'.format(args.tracker, int(args.num))
+    video_path = '../data/demo_data/val/images_{:0>3d}/left_colorimages'.format(int(args.num))
     if not os.path.exists(path1):
         os.makedirs(path1)
     if not os.path.exists(path2):

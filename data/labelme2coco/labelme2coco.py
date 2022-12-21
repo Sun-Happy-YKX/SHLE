@@ -12,7 +12,9 @@ def transfer_func(labelme_path, export_dir, file_name):
     save_json(train_coco.json, os.path.abspath(export_dir+file_name))
 
 
-transfer_func("../labelme_data/test2017_images_014", 
-                "../coco_data/test", "/test2017_images_014.json")
-transfer_func("../labelme_data/test2017_images_015", 
-                "../coco_data/test", "/test2017_images_015.json")
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_num', type=int, default=14)  
+args = parser.parse_args()
+transfer_func("../demo_data/val/images_{:0>3d}/left_colorimages".format(int(args.data_num)), "../coco_data/test", 
+                "/test2017_images_{:0>3d}.json".format(int(args.data_num)))
